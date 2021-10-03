@@ -15,7 +15,8 @@ def retrieve_queried_tweet_ids(out_path):
         for x in f:
           x = json.loads(x)
           data.append(x['id_str'])
-        return data
+      print('{} queried'.format(len(data)))
+      return data
     except:
       print('return empty array')
       return []
@@ -71,12 +72,8 @@ def process(args):
     tweet_ids = retrieve_tweet_ids(args.in_path)
     queried_tweet_ids = retrieve_queried_tweet_ids(args.out_path)
 
-    for id in queried_tweet_ids:
-      try:
-          tweet_ids.remove(str(id))
-      except:
-          # id has been removed before
-          pass
+    tweet_ids = list(set(tweet_ids) - set(queried_tweet_ids))
+    print('want to query {}'.format(len(tweet_ids)))
     
     with open(args.out_path, 'a') as f:
       for step, id in tqdm.tqdm(enumerate(tweet_ids)):

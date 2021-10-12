@@ -28,21 +28,21 @@ def reproducible():
     torch.backends.cudnn.deterministic = True
     
 
-def correct_prediction(output, labels):
-    preds = output.max(1)[1].type_as(labels)
+def correct_prediction(output, labels, threshold):
+    preds = output > threshold
     correct = preds.eq(labels).double()
     correct = correct.sum()
     return correct
 
 
 def train_model(model, args, trainset_reader, validset_reader):
-  def _eval_model(model, validset_reader):
+  def _eval_model(model, validset_reader, threshold):
     model.eval()
     correct_pred = 0.0
     for index, data in enumerate(validset_reader):
         inputs, labels = data
         probs = model(inputs)
-        correct_pred += correct_predictions(probs, labels)
+        correct_pred += correct_predictions(probs, labels, threshold)
     # TODO: How to define the total samples in the dataset
     accuracy = correct_pred / validset_reader.total_num
     return accuracy
@@ -87,7 +87,7 @@ def train_model(model, args, trainset_reader, validset_reader):
           if global_step % args.eval_step == 0:
               logger.info('Start eval!')
               with torch.no_grad():
-                  dev_accuracy = _eval_model(model, validset_reader)
+                  dev_accuracy = _eval_model(model, validset_reader, threshold)
                   logger.info('Dev total acc: {0}'.format(dev_accuracy))
                   if dev_accuracy > best_accuracy:
                       best_accuracy = dev_accuracy
@@ -147,6 +147,9 @@ if __name__ == "__main__":
                         help="Number of updates steps to accumulate before performing a backward/update pass.")
     parser.add_argument("--eval_step", default=500, type=int,
                         help="number of steps required to do the evaluation")
+    
+    # prediction arguments
+    parser.add_argument("--threshold", default=0.5, type=float, help="Threshold to decide the label given the logits")
 
     if not os.path.exists(args.outdir):
         os.mkdir(args.outdir)

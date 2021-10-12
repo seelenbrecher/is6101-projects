@@ -10,7 +10,7 @@ def FakeNewsClassifier(Module):
   def __init__(self, bert, args):
     super(dream_model, self).__init__()
     
-    self.max_len = args.max_len
+    self.max_len = args.tokenizer_max_length
     self.hidden_size = args.hidden_size
     
     self.embedding = bert

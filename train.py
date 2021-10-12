@@ -26,12 +26,26 @@ def reproducible():
     torch.cuda.manual_seed_all(SEED)
     np.random.seed(SEED)
     torch.backends.cudnn.deterministic = True
+    
+
+def correct_prediction(output, labels):
+    preds = output.max(1)[1].type_as(labels)
+    correct = preds.eq(labels).double()
+    correct = correct.sum()
+    return correct
 
 
 def train_model(model, args, trainset_reader, validset_reader):
   def _eval_model(model, validset_reader):
-    # TODO: Define how to evaluate the model
-    pass
+    model.eval()
+    correct_pred = 0.0
+    for index, data in enumerate(validset_reader):
+        inputs, labels = data
+        probs = model(inputs)
+        correct_pred += correct_predictions(probs, labels)
+    # TODO: How to define the total samples in the dataset
+    accuracy = correct_pred / validset_reader.total_num
+    return accuracy
   
   # save the best model inside outdir
   save_path = args.outdir + '/model'

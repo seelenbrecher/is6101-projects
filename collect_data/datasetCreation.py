@@ -9,6 +9,15 @@ print('time to read', time.time()-start)
 userMap = {}
 unmappedTweets = []
 
+tweet_label = {}
+
+def precompute_label():
+    for index, row in df.iterrows():
+        # we assume that in the pd, the label of the user_id is the same regardless the tweet_id
+        tweet_id, label = row['tweet_id'], row['label']
+        tweet_label[tweet_id] = label
+        
+
 def getLabel(tweetId):
     # st = time.time()
     # print(coaid.dtypes)
@@ -42,7 +51,11 @@ def createDataset(args):
             else:
                 tweet = { 'tweet_id': tweetentry['id_str'], 'tweet_text': tweetentry['full_text']}
                 # print(tweetentry['id_str'])
-                label = getLabel(tweetentry['id_str'])
+                #label = getLabel(tweetentry['id_str'])
+                if tweetentry['id_str'] in tweet_label:
+                    label = tweet_label[tweetentry['id_str']]
+                else:
+                    label = None
                 # if label != none:
                 userMap[tweetentry['user_id']] = {'user_id':tweetentry['user_id'], 'tweets': [tweet], 'label': label}
                 # print(userMap[tweetentry['user_id']])
@@ -63,6 +76,7 @@ def main():
 
     # if args.by_tweet_ids:
     #     print('true')
+    precompute_label()
     createDataset(args)
 
 main()

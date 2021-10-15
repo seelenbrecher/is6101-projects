@@ -10,12 +10,16 @@ from torch.autograd import Variable
 from pytorch_pretrained_bert.optimization import BertAdam
 from transformers import AdamW, get_linear_schedule_with_warmup
 
-from transformers import BertForSequenceClassification, BertTokenizer
+from transformers import BertModel, BertTokenizer
 
 from models import FakeNewsClassifier
 from torch.nn import NLLLoss
 
+from dataLoader import DataLoader
+
 import logging
+
+logger = logging.getLogger(__name__)
 
 
 def reproducible():
@@ -61,7 +65,7 @@ def train_model(model, args, trainset_reader, validset_reader):
       {'params': [p for n, p in param_optimizer if not any(nd in n for nd in no_decay)], 'weight_decay': args.weight_decay},
       {'params': [p for n, p in param_optimizer if any(nd in n for nd in no_decay)], 'weight_decay': 0.0}
   ]
-  optimizer = Adam(optimizer_grouped_parameters,
+  optimizer = BertAdam(optimizer_grouped_parameters,
                        lr=args.learning_rate) # follows the paper, use ADAM
   scheduler = get_linear_schedule_with_warmup(
       optimizer, num_warmup_steps=1000, num_training_steps=t_total
@@ -74,7 +78,7 @@ def train_model(model, args, trainset_reader, validset_reader):
       for index, data in enumerate(trainset_reader):
           inputs, labels = data
           probs = model(inputs)
-          loss = F.binary_cross_entropy(evi_probs, evi_labels)
+          loss = F.binary_cross_entropy(probs.squeeze(-1), labels)
           running_loss += loss.item()
           if args.gradient_accumulation_steps > 1:
               loss = loss / args.gradient_accumulation_steps
@@ -105,11 +109,11 @@ def main(args):
     
     logger.info("loading training set")
     # TODO: call dataloader here
-    trainset_reader = None
-    validset_reader = None
+    trainset_reader = DataLoader(args.train_path, tokenizer, args)
+    validset_reader = DataLoader(args.valid_path, tokenizer, args)
 
     logger.info('initializing bert model')
-    bert_model = BertForSequenceClassification.from_pretrained(args.bert_type)
+    bert_model = BertModel.from_pretrained(args.bert_type)
     
     model = FakeNewsClassifier(bert_model, args)
     model = nn.DataParallel(model)
@@ -137,7 +141,6 @@ if __name__ == "__main__":
     # optimizer arguments
     parser.add_argument("--learning_rate", default=2e-5, type=float, help="The initial learning rate")
     parser.add_argument("--epoch", default=3, type=int)
-    args = parser.parse_args()
     
     # arguments that is not stated in the paper, but might be useful
     parser.add_argument('--weight_decay', type=float, default=5e-4, help='Weight decay (L2 loss on parameters).')
@@ -150,6 +153,10 @@ if __name__ == "__main__":
     
     # prediction arguments
     parser.add_argument("--threshold", default=0.5, type=float, help="Threshold to decide the label given the logits")
+
+    args = parser.parse_args()
+
+    print(args)
 
     if not os.path.exists(args.outdir):
         os.mkdir(args.outdir)

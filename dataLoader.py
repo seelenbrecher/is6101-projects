@@ -112,13 +112,15 @@ class DataLoader(object):
 
     def read_file(self, data_path):
         users = []
-        with open(data_path) as fin:
+        with open(data_path, 'r', encoding='utf-8') as fin:
             for step, line in enumerate(fin):
-                entry = json.loads(line)
+                if step > 100000:
+                    break
+                entry = json.loads(line.encode('utf-8'))
                 tweets = entry['tweets']
                 tweet_text = list()
-                for tweet in tweets['tweet_text']:
-                    tweet_text.append(tweet)   #TODO process tweets and append
+                for tweet in tweets:
+                    tweet_text.append(tweet['tweet_text'])   #TODO process tweets and append
                     # evi_list.append([self.process_sent(claim), self.process_wiki_title(evidence[0]),
                     #                  self.process_sent(evidence[2])])
                 label = entry['label']
@@ -178,7 +180,7 @@ class DataLoader(object):
             seg_tensor_input = Variable(
                 torch.LongTensor(seg_padding_inputs)).view(-1, self.tweet_num, self.max_len)
             lab_tensor = Variable(
-                torch.LongTensor(labels))
+                torch.FloatTensor(labels))
             if self.cuda:
                 inp_tensor_input = inp_tensor_input.cuda()
                 msk_tensor_input = msk_tensor_input.cuda()

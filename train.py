@@ -46,8 +46,9 @@ def train_model(model, args, trainset_reader, validset_reader):
     for index, data in enumerate(validset_reader):
         inputs, labels = data
         probs = model(inputs)
-        correct_pred += correct_predictions(probs, labels, threshold)
+        correct_pred += correct_prediction(probs.squeeze(-1), labels, threshold)
     # TODO: How to define the total samples in the dataset
+    print(correct_pred, validset_reader.total_num)
     accuracy = correct_pred / validset_reader.total_num
     return accuracy
   
@@ -91,7 +92,7 @@ def train_model(model, args, trainset_reader, validset_reader):
           if global_step % args.eval_step == 0:
               logger.info('Start eval!')
               with torch.no_grad():
-                  dev_accuracy = _eval_model(model, validset_reader, threshold)
+                  dev_accuracy = _eval_model(model, validset_reader, args.threshold)
                   logger.info('Dev total acc: {0}'.format(dev_accuracy))
                   if dev_accuracy > best_accuracy:
                       best_accuracy = dev_accuracy
@@ -99,7 +100,6 @@ def train_model(model, args, trainset_reader, validset_reader):
                       torch.save({'epoch': epoch,
                                   'model': model.state_dict(),
                                   'best_accuracy': best_accuracy}, save_path + ".best.pt")
-                      logger.info('prec = {}, rec={}, f1={}'.format(prec, rec, f1))
                       logger.info("Saved best epoch {0}, best accuracy {1}".format(epoch, best_accuracy))
 
 
@@ -139,7 +139,7 @@ if __name__ == "__main__":
     parser.add_argument('--outdir', required=True, help='path to output directory')
     
     # optimizer arguments
-    parser.add_argument("--learning_rate", default=2e-5, type=float, help="The initial learning rate")
+    parser.add_argument("--learning_rate", default=3e-6, type=float, help="The initial learning rate")
     parser.add_argument("--epoch", default=3, type=int)
     
     # arguments that is not stated in the paper, but might be useful

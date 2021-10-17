@@ -95,9 +95,10 @@ class DataLoader(object):
         self.data_path = data_path
         users = self.read_file(data_path)
         self.users = users
-        inputs, labels = list(zip(* users))
+        inputs, labels, ids = list(zip(* users))
         self.inputs = inputs
         self.labels = labels
+        self.ids = ids
         self.test = test
 
         self.total_num = len(users)
@@ -126,8 +127,9 @@ class DataLoader(object):
                     # evi_list.append([self.process_sent(claim), self.process_wiki_title(evidence[0]),
                     #                  self.process_sent(evidence[2])])
                 label = entry['label']
+                ids = entry['user_id']
                 # evi_list = evi_list[:self.evi_num]
-                users.append([tweet_text, label])
+                users.append([tweet_text, label, ids])
         return users
 
 
@@ -168,6 +170,8 @@ class DataLoader(object):
         if self.step < self.total_step:
             inputs = self.inputs[self.step * self.batch_size : (self.step+1)*self.batch_size]
             labels = self.labels[self.step * self.batch_size : (self.step+1)*self.batch_size]
+            ids = self.ids[self.step * self.batch_size : (self.step+1)*self.batch_size]
+
             inp_padding_inputs, msk_padding_inputs, seg_padding_inputs = [], [], []
             for step in range(len(inputs)):
                 inp, msk, seg = tok2int_list(inputs[step], self.tokenizer, self.max_len, self.tweet_num)
@@ -189,14 +193,15 @@ class DataLoader(object):
                 seg_tensor_input = seg_tensor_input.cuda()
                 lab_tensor = lab_tensor.cuda()
             self.step += 1
-            return (inp_tensor_input, msk_tensor_input, seg_tensor_input), lab_tensor
+            return (inp_tensor_input, msk_tensor_input, seg_tensor_input), lab_tensor, ids
         else:
             self.step = 0
             if not self.test:
                 self.shuffle()
-                inputs, labels = list(zip(*self.users))
+                inputs, labels, ids = list(zip(*self.users))
                 self.inputs = inputs
                 self.labels = labels
+                self.ids = ids
             raise StopIteration()
 
 class DataLoaderTest(object):

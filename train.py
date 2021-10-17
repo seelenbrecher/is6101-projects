@@ -60,14 +60,16 @@ def train_model(model, args, trainset_reader, validset_reader):
   
   # setup the optimizers. some may not be stated in the paper, but might be useful
   t_total = int(trainset_reader.total_num / args.train_batch_size / args.gradient_accumulation_steps * args.epoch)
+  print(t_total, trainset_reader.total_num, args.train_batch_size, args.gradient_accumulation_steps, args.epoch)
   param_optimizer = list(model.named_parameters())
   no_decay = ['bias', 'LayerNorm.weight']
   optimizer_grouped_parameters = [
       {'params': [p for n, p in param_optimizer if not any(nd in n for nd in no_decay)], 'weight_decay': args.weight_decay},
       {'params': [p for n, p in param_optimizer if any(nd in n for nd in no_decay)], 'weight_decay': 0.0}
   ]
-  optimizer = BertAdam(optimizer_grouped_parameters,
-                       lr=args.learning_rate) # follows the paper, use ADAM
+  #optimizer = BertAdam(optimizer_grouped_parameters,
+  #                     lr=args.learning_rate) # follows the paper, use ADAM
+  optimizer = AdamW(model.parameters(), lr=args.learning_rate)
   scheduler = get_linear_schedule_with_warmup(
       optimizer, num_warmup_steps=1000, num_training_steps=t_total
   )
@@ -79,7 +81,7 @@ def train_model(model, args, trainset_reader, validset_reader):
       for index, data in enumerate(trainset_reader):
           inputs, labels = data
           probs = model(inputs)
-          loss = F.binary_cross_entropy(probs.squeeze(-1), labels)
+          loss = F.binary_cross_entropy(probs.squeeze(-1), labels, reduce=False).sum()
           running_loss += loss.item()
           if args.gradient_accumulation_steps > 1:
               loss = loss / args.gradient_accumulation_steps
@@ -87,9 +89,11 @@ def train_model(model, args, trainset_reader, validset_reader):
           global_step += 1
           if global_step % args.gradient_accumulation_steps == 0:
               optimizer.step()
+              scheduler.step()
               optimizer.zero_grad()
+              print(optimizer.param_groups[0]['lr'])
               logger.info('Epoch: {0}, Step: {1}, Loss: {2}'.format(epoch, global_step, (running_loss / global_step)))
-          if global_step % args.eval_step == 0:
+          if global_step % (args.eval_step * args.gradient_accumulation_steps) == 0:
               logger.info('Start eval!')
               with torch.no_grad():
                   dev_accuracy = _eval_model(model, validset_reader, args.threshold)
@@ -139,7 +143,7 @@ if __name__ == "__main__":
     parser.add_argument('--outdir', required=True, help='path to output directory')
     
     # optimizer arguments
-    parser.add_argument("--learning_rate", default=3e-6, type=float, help="The initial learning rate")
+    parser.add_argument("--learning_rate", default=2e-5, type=float, help="The initial learning rate")
     parser.add_argument("--epoch", default=3, type=int)
     
     # arguments that is not stated in the paper, but might be useful

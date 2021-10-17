@@ -214,9 +214,10 @@ class DataLoaderTest(object):
         self.data_path = data_path
         users = self.read_file(data_path)
         self.users = users
-        inputs, ids = list(zip(* users))
+        inputs, labels, ids = list(zip(* users))
         self.inputs = inputs
         self.ids = ids
+        self.labels = labels
 
         self.total_num = len(users)
         self.total_step = np.ceil(self.total_num * 1.0 / batch_size)
@@ -253,8 +254,9 @@ class DataLoaderTest(object):
                     # evi_list.append([self.process_sent(claim), self.process_wiki_title(evidence[0]),
                     #                  self.process_sent(evidence[2])])
                 userid = entry['user_id']
+                label = entry['label']
                 # evi_list = evi_list[:self.evi_num]
-                users.append([tweet_text, userid])
+                users.append([tweet_text, label, userid])
         return users
         #         id = instance['id']
         #         evi_list = evi_list[:self.evi_num]
@@ -279,6 +281,8 @@ class DataLoaderTest(object):
 
         if self.step < self.total_step:
             inputs = self.inputs[self.step * self.batch_size : (self.step+1)*self.batch_size]
+            labels = self.labels[self.step * self.batch_size : (self.step+1)*self.batch_size]
+            # user_ids = self.ids[self.step * self.batch_size : (self.step+1)*self.batch_size]
 
             ids = self.ids[self.step * self.batch_size : (self.step+1)*self.batch_size]
             inp_padding_inputs, msk_padding_inputs, seg_padding_inputs = [], [], []
@@ -301,7 +305,7 @@ class DataLoaderTest(object):
                 seg_tensor_input = seg_tensor_input.cuda()
 
             self.step += 1
-            return (inp_tensor_input, msk_tensor_input, seg_tensor_input), ids
+            return (inp_tensor_input, msk_tensor_input, seg_tensor_input), labels, ids
         else:
             self.step = 0
             raise StopIteration()

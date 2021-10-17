@@ -9,6 +9,9 @@ from tqdm import tqdm
 from torch.autograd import Variable
 from pytorch_pretrained_bert.optimization import BertAdam
 from transformers import AdamW, get_linear_schedule_with_warmup
+from sklearn.metrics import f1_score
+
+from statistics import mode
 
 from transformers import BertModel, BertTokenizer
 
@@ -43,11 +46,31 @@ def train_model(model, args, trainset_reader, validset_reader):
   def _eval_model(model, validset_reader, threshold):
     model.eval()
     correct_pred = 0.0
+    usermap = {}
+    ground_truth = []
+    label_pred = [] 
+
     for index, data in enumerate(validset_reader):
-        inputs, labels = data
+        inputs, labels, userids = data
         probs = model(inputs)
         correct_pred += correct_prediction(probs.squeeze(-1), labels, threshold)
+        preds = probs.squeeze(-1) > threshold
+        for idx, user in enumerate(userids):
+            if user in usermap:
+                usermap[user]['pred'].append(preds[idx])
+            else:
+                usermap[user]['gt'] = labels[idx]
+                usermap[user]['pred'] = [preds[idx]]
+
     # TODO: How to define the total samples in the dataset
+    for user in usermap:
+        label_pred.append( mode(usermap[user]['pred']) )
+        ground_truth.append(usermap[user]['gt'])
+    
+    # use sklearn f1_score for evaluation metric computation
+    f1 = f1_score(ground_truth, label_pred, zero_division=1)
+    print('f1 score:', f1)
+
     print(correct_pred, validset_reader.total_num)
     accuracy = correct_pred / validset_reader.total_num
     return accuracy

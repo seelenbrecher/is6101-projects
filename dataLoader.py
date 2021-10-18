@@ -212,7 +212,7 @@ class DataLoaderTest(object):
 
         self.batch_size = batch_size
         self.tokenizer = tokenizer
-        self.max_len = args.max_len
+        self.max_len = args.tokenizer_max_length
         self.tweet_num = 5   #no.of tweets per user
         # self.label_map = label_map
         self.threshold = args.threshold
@@ -251,11 +251,13 @@ class DataLoaderTest(object):
         users = []
         with open(data_path) as fin:
             for step, line in enumerate(fin):
-                entry = json.loads(line)
+                if step > 100000:
+                    break
+                entry = json.loads(line.encode('utf-8'))
                 tweets = entry['tweets']
                 tweet_text = list()
-                for tweet in tweets['tweet_text']:
-                    tweet_text.append(tweet)   #TODO process tweets and append
+                for tweet in tweets:
+                    tweet_text.append(tweet['tweet_text'])   #TODO process tweets and append
                     # evi_list.append([self.process_sent(claim), self.process_wiki_title(evidence[0]),
                     #                  self.process_sent(evidence[2])])
                 userid = entry['user_id']
@@ -298,11 +300,11 @@ class DataLoaderTest(object):
                 seg_padding_inputs += seg
 
             inp_tensor_input = Variable(
-                torch.LongTensor(inp_padding_inputs))
+                torch.LongTensor(inp_padding_inputs)).view(-1, self.tweet_num, self.max_len)
             msk_tensor_input = Variable(
-                torch.LongTensor(msk_padding_inputs))
+                torch.LongTensor(msk_padding_inputs)).view(-1, self.tweet_num, self.max_len)
             seg_tensor_input = Variable(
-                torch.LongTensor(seg_padding_inputs))
+                torch.LongTensor(seg_padding_inputs)).view(-1, self.tweet_num, self.max_len)
 
             if self.cuda:
                 inp_tensor_input = inp_tensor_input.cuda()

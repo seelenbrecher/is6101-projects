@@ -1,6 +1,7 @@
 import random, os
 import argparse
 import numpy as np
+import json
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -10,10 +11,12 @@ from torch.autograd import Variable
 from pytorch_pretrained_bert.optimization import BertAdam
 from transformers import AdamW, get_linear_schedule_with_warmup
 
-from transformers import BertForSequenceClassification, BertTokenizer
+from transformers import BertModel, BertTokenizer
 
 from models import FakeNewsClassifier
 from torch.nn import NLLLoss
+
+from dataLoader import DataLoaderTest
 
 import logging
 
@@ -32,12 +35,13 @@ def reproducible():
 
 def eval_model(model, validset_reader, outdir, name):
     outpath = outdir + name
+    print('eval model')
 
     with open(outpath, "w") as f:
         for index, data in enumerate(validset_reader):
             inputs, labels, ids = data
             probs = model(inputs)
-            preds = probs > args.trheshold
+            preds = (probs > args.threshold).squeeze(-1).tolist()
             assert len(preds) == len(ids)
             for step in range(len(preds)):
                 instance = {"id": ids[step], "predicted_label": preds[step]}
@@ -52,12 +56,13 @@ def main(args):
     
     # TODO: Load test dataloader
     logger.info("loading validation set")
-    validset_reader = None
+    validset_reader = DataLoaderTest(args.test_path, tokenizer, args)
     
     logger.info('initializing estimator model')
-    bert_model = BertForSequenceClassification.from_pretrained(args.bert_type)
+    bert_model = BertModel.from_pretrained(args.bert_type)
     
     model = FakeNewsClassifier(bert_model, args)
+    model = nn.DataParallel(model)
     model.load_state_dict(torch.load(args.checkpoint)['model'])
     model = model.cuda()
     model.eval()
@@ -75,6 +80,7 @@ if __name__ == "__main__":
     parser.add_argument("--batch_size", default=4, type=int, help="Total batch size for training.")
     parser.add_argument('--outdir', required=True, help='path to output directory')
     parser.add_argument('--checkpoint', required=True)
+    parser.add_argument('--name', help='where to store the output')
     
     
     # BERT argument

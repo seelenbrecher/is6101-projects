@@ -46,31 +46,11 @@ def train_model(model, args, trainset_reader, validset_reader):
   def _eval_model(model, validset_reader, threshold):
     model.eval()
     correct_pred = 0.0
-    usermap = {}
-    ground_truth = []
-    label_pred = [] 
-
     for index, data in enumerate(validset_reader):
-        inputs, labels, userids = data
+        inputs, labels = data
         probs = model(inputs)
         correct_pred += correct_prediction(probs.squeeze(-1), labels, threshold)
-        preds = probs.squeeze(-1) > threshold
-        for idx, user in enumerate(userids):
-            if user in usermap:
-                usermap[user]['pred'].append(preds[idx])
-            else:
-                usermap[user]['gt'] = labels[idx]
-                usermap[user]['pred'] = [preds[idx]]
-
     # TODO: How to define the total samples in the dataset
-    for user in usermap:
-        label_pred.append( mode(usermap[user]['pred']) )
-        ground_truth.append(usermap[user]['gt'])
-    
-    # use sklearn f1_score for evaluation metric computation
-    f1 = f1_score(ground_truth, label_pred, zero_division=1)
-    print('f1 score:', f1)
-
     print(correct_pred, validset_reader.total_num)
     accuracy = correct_pred / validset_reader.total_num
     return accuracy
@@ -102,7 +82,7 @@ def train_model(model, args, trainset_reader, validset_reader):
       model.train()
       optimizer.zero_grad()
       for index, data in enumerate(trainset_reader):
-          inputs, labels = data
+          inputs, labels, ids = data
           probs = model(inputs)
           loss = F.binary_cross_entropy(probs.squeeze(-1), labels, reduce=False).sum()
           running_loss += loss.item()

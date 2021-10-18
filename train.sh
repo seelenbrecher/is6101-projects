@@ -1,4 +1,4 @@
-NAME=fake-news-classifier-v0
+NAME=fake-news-classifier-v1
 
 rm ../checkpoint/$NAME/train_log.txt
 
@@ -7,7 +7,9 @@ CUDA_VISIBLE_DEVICES=0 python train.py --outdir checkpoint/$NAME \
 --valid_path data/coaid/FNSC_test.json \
 --epoch 5
 
-#CUDA_VISIBLE_DEVICES=0 python test.py --outdir ./output/ \
-# --test_path ../data/coaid/test.json \
-# --checkpoint ../checkpoint/$NAME/model.best.pt \
-# --name $NAME-dev.json
+CUDA_VISIBLE_DEVICES=0 python test.py --outdir ./output/ \
+--test_path data/coaid/FNSC_test.json \
+--checkpoint checkpoint/$NAME/model.best.pt \
+--name $NAME-dev.json
+
+python calculate_results.py --input output/$NAME-dev.json --ground_trut data/coaid/FNSC_test.json

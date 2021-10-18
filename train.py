@@ -84,7 +84,7 @@ def train_model(model, args, trainset_reader, validset_reader):
       for index, data in enumerate(trainset_reader):
           inputs, labels, ids = data
           probs = model(inputs)
-          loss = F.binary_cross_entropy(probs.squeeze(-1), labels, reduce=False).sum()
+          loss = F.binary_cross_entropy(probs.squeeze(-1), labels)
           running_loss += loss.item()
           if args.gradient_accumulation_steps > 1:
               loss = loss / args.gradient_accumulation_steps

@@ -254,6 +254,8 @@ class DataLoaderTest(object):
                 if step > 100000:
                     break
                 entry = json.loads(line.encode('utf-8'))
+                if entry['label'] is None:
+                    continue
                 tweets = entry['tweets']
                 tweet_text = list()
                 for tweet in tweets:

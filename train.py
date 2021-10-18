@@ -47,7 +47,7 @@ def train_model(model, args, trainset_reader, validset_reader):
     model.eval()
     correct_pred = 0.0
     for index, data in enumerate(validset_reader):
-        inputs, labels = data
+        inputs, labels, ids = data
         probs = model(inputs)
         correct_pred += correct_prediction(probs.squeeze(-1), labels, threshold)
     # TODO: How to define the total samples in the dataset
@@ -63,7 +63,6 @@ def train_model(model, args, trainset_reader, validset_reader):
   
   # setup the optimizers. some may not be stated in the paper, but might be useful
   t_total = int(trainset_reader.total_num / args.train_batch_size / args.gradient_accumulation_steps * args.epoch)
-  print(t_total, trainset_reader.total_num, args.train_batch_size, args.gradient_accumulation_steps, args.epoch)
   param_optimizer = list(model.named_parameters())
   no_decay = ['bias', 'LayerNorm.weight']
   optimizer_grouped_parameters = [
@@ -94,7 +93,6 @@ def train_model(model, args, trainset_reader, validset_reader):
               optimizer.step()
               scheduler.step()
               optimizer.zero_grad()
-              print(optimizer.param_groups[0]['lr'])
               logger.info('Epoch: {0}, Step: {1}, Loss: {2}'.format(epoch, global_step, (running_loss / global_step)))
           if global_step % (args.eval_step * args.gradient_accumulation_steps) == 0:
               logger.info('Start eval!')

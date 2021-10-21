@@ -127,7 +127,7 @@ class DataLoader(object):
                     # evi_list.append([self.process_sent(claim), self.process_wiki_title(evidence[0]),
                     #                  self.process_sent(evidence[2])])
                 label = entry['label']
-                ids = entry['user_id']
+                ids = entry['mapped_user_id']
                 # evi_list = evi_list[:self.evi_num]
                 users.append([tweet_text, label, ids])
         return users
@@ -262,7 +262,7 @@ class DataLoaderTest(object):
                     tweet_text.append(tweet['tweet_text'])   #TODO process tweets and append
                     # evi_list.append([self.process_sent(claim), self.process_wiki_title(evidence[0]),
                     #                  self.process_sent(evidence[2])])
-                userid = entry['user_id']
+                userid = entry['mapped_user_id']
                 label = entry['label']
                 # evi_list = evi_list[:self.evi_num]
                 users.append([tweet_text, label, userid])

@@ -1,7 +1,7 @@
 import argparse
 import json
 
-from sklearn.metrics import precision_recall_fscore_support
+from sklearn.metrics import precision_recall_fscore_support, accuracy_score
 
 
 def main(args):
@@ -21,7 +21,7 @@ def main(args):
             x = json.loads(x.encode('utf-8'))
             if x['label'] is None:
                 continue
-            ground_truth[x['user_id']] = x['label']
+            ground_truth[x['mapped_user_id']] = int(x['label'])
     
     golds = []
     preds = []
@@ -41,6 +41,8 @@ def main(args):
 
     prec, rec, f1, _ = precision_recall_fscore_support(golds, preds, average='binary')
     print('prec = {}, rec={}, f1={}'.format(prec, rec, f1))
+
+    print('accuracy = {}'.format(accuracy_score(golds, preds)))
     
 
 

@@ -115,8 +115,6 @@ class DataLoader(object):
         users = []
         with open(data_path, 'r', encoding='utf-8') as fin:
             for step, line in enumerate(fin):
-                if step > 100000:
-                    break
                 entry = json.loads(line.encode('utf-8'))
                 if entry['label'] is None:
                     continue
@@ -126,7 +124,7 @@ class DataLoader(object):
                     tweet_text.append(tweet['tweet_text'])   #TODO process tweets and append
                     # evi_list.append([self.process_sent(claim), self.process_wiki_title(evidence[0]),
                     #                  self.process_sent(evidence[2])])
-                label = entry['label']
+                label = int(entry['label'])
                 ids = entry['mapped_user_id']
                 # evi_list = evi_list[:self.evi_num]
                 users.append([tweet_text, label, ids])
@@ -251,8 +249,6 @@ class DataLoaderTest(object):
         users = []
         with open(data_path) as fin:
             for step, line in enumerate(fin):
-                if step > 100000:
-                    break
                 entry = json.loads(line.encode('utf-8'))
                 if entry['label'] is None:
                     continue
@@ -263,7 +259,7 @@ class DataLoaderTest(object):
                     # evi_list.append([self.process_sent(claim), self.process_wiki_title(evidence[0]),
                     #                  self.process_sent(evidence[2])])
                 userid = entry['mapped_user_id']
-                label = entry['label']
+                label = int(entry['label'])
                 # evi_list = evi_list[:self.evi_num]
                 users.append([tweet_text, label, userid])
         return users

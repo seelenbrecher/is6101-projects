@@ -74,7 +74,7 @@ def train_model(model, args, trainset_reader, validset_reader):
   #                     lr=args.learning_rate) # follows the paper, use ADAM
   optimizer = AdamW(model.parameters(), lr=args.learning_rate)
   scheduler = get_linear_schedule_with_warmup(
-      optimizer, num_warmup_steps=1000, num_training_steps=t_total
+      optimizer, num_warmup_steps=10, num_training_steps=t_total
   )
   
   global_step = 0

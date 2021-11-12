@@ -16,10 +16,22 @@ class FakeNewsClassifier(Module):
     
     self.embedding = bert
 
-    self.classifier = nn.Sequential(
-            Linear(self.hidden_size, 1),
-            LeakyReLU(0.01), #from equation 4
-    )
+    self.compl_classifier = args.compl_classifier
+    if self.compl_classifier:
+        self.classifier = nn.Sequential(
+            Linear(self.hidden_size, 50),
+            Linear(50, 1),
+            LeakyReLU(0.01),
+        )
+    else:
+        self.classifier = nn.Sequential(
+                Linear(self.hidden_size, 1),
+                LeakyReLU(0.01), #from equation 4
+        )
+    
+    self.use_token = args.use_token
+    if self.use_token:
+        self.input_proj = nn.Linear(self.hidden_size * 2, self.hidden_size)
 
   def forward(self, inp):
     """
@@ -40,8 +52,12 @@ class FakeNewsClassifier(Module):
     seg_tensor = seg_tensor.view(-1, self.max_len)
     out = self.embedding(inp_tensor, msk_tensor, seg_tensor)
     inputs = out.pooler_output
+    inputs_hiddens = out.last_hidden_state
     
-    # CLS token
+    if self.use_token:
+        inputs_hiddens_pool = (inputs_hiddens * msk_tensor.unsqueeze(-1)).mean(dim=1)
+        inputs = self.input_proj(torch.cat([inputs, inputs_hiddens_pool], dim=-1))
+    
     inputs = inputs.view([-1, num_tweets, self.hidden_size])
     
     user_embedding = inputs.max(dim=1)[0]

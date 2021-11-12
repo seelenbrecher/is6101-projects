@@ -44,6 +44,11 @@ def main(args):
 
     print('accuracy = {}'.format(accuracy_score(golds, preds)))
     
+    with open('{}1'.format(args.input), 'w') as f:
+        for p, u in zip(preds, data):
+            d = {'user_id': u, 'predicted_label': p}
+            f.write('{}\n'.format(json.dumps(d)))
+    
 
 
 if __name__=='__main__':

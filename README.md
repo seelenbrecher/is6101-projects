@@ -1,4 +1,4 @@
-###Install Dependencies
+### Install Dependencies
 
 conda env create --file environment.yml
 conda activate fake_news
